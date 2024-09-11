@@ -23,6 +23,18 @@
 #define cilindroRecoge 21
 #define expulsa 23
 
+//defino varibles de antirrebote
+
+unsigned long lastDebounceTimeReset = 0;
+unsigned long lastDebounceTimeProgrammer = 0;
+unsigned long lastDebounceTimeInicio = 0;
+unsigned long debounceDelay = 100;
+int lastButtonStateReset = LOW;
+int lastButtonStateProgrammer = LOW;
+int lastButtonStateInicio = LOW;
+int buttonStateReset;
+int buttonStateProgrammer;
+int buttonStateInicio;
 
 bool modoManual = false;
 //incluyo librerías
@@ -102,63 +114,101 @@ void loop() {
   while (modoManual == false) {
     verSiPresionaReset();
 
-    if (digitalRead(programmer) == HIGH) {
-      while (digitalRead(programmer) == HIGH) {
-        delay(500);
-      }
-      confirmacion = 0;
-      tiempoSegundos += 30;
-      cuenta = String(tiempoSegundos);
-      lcd.setCursor(0, 1);
-      lcd.print("Tiempo:" + cuenta + "Seg      ");
-      Serial.print("tiempo programado: ");
-      Serial.println(tiempoSegundos);
+    /////
+    int readingProgrammer = digitalRead(programmer);
+
+    // Si el estado ha cambiado
+    if (readingProgrammer != lastButtonStateProgrammer) {
+      // Reinicia el contador de tiempo
+      lastDebounceTimeProgrammer = millis();
     }
 
-    if ((digitalRead(inicio) == HIGH) && tiempoSegundos > 0) {
-      while (digitalRead(inicio) == HIGH) {
-        delay(500);
-      }
-      if (confirmacion == 0) {
-        confirmacion++;
-        Serial.print("confirmación");
-        Serial.println(confirmacion);
-        for (int i = 0; i < 3; i++) {
-          lcd.clear();
-          delay(300);
+    // Si han pasado más de 50 ms desde el último cambio detectado
+    if ((millis() - lastDebounceTimeProgrammer) > debounceDelay) {
+      // Si el estado ha cambiado después del retardo, actualiza el estado del botón
+      if (readingProgrammer != buttonStateProgrammer) {
+        buttonStateProgrammer = readingProgrammer;
+
+
+        //////
+
+        if (buttonStateProgrammer == HIGH) {
+
+          confirmacion = 0;
+          tiempoSegundos += 30;
+          cuenta = String(tiempoSegundos);
           lcd.setCursor(0, 1);
           lcd.print("Tiempo:" + cuenta + "Seg      ");
-          lcd.setCursor(0, 0);
-          lcd.print("confirmar-->");
-          delay(700);
+          Serial.print("tiempo programado: ");
+          Serial.println(tiempoSegundos);
         }
-      }
-      else {
-        lcd.clear();
-        lcd.setCursor(0, 0);
-        lcd.print("inicio-->");
-        delay(700);
-        lcd.clear();
-        digitalWrite(cilindroEstira, LOW);
-        digitalWrite(cilindroRecoge, HIGH);
-        for (int i = tiempoSegundos; i >= 0; i--) {
-          cuenta = String(i);
-          lcd.setCursor(0, 1);
-          lcd.print("Tiempo:" + cuenta + "Seg      ");
-          Serial.print("tiempo: ");
-          Serial.println(cuenta);
-          delay(1000);
-          verSiPresionaReset();
-        }
-
-        rutinaDeExpulsion();
-
-        lcd.clear();
-        lcd.setCursor(0, 1);
-        lcd.print("Tiempo:" + cuenta + "Seg      ");
-
       }
     }
+// Guarda el estado actual para comparar en el próximo ciclo
+  lastButtonStateProgrammer = readingProgrammer;
+    /////
+    int readingInicio = digitalRead(inicio);
+
+    // Si el estado ha cambiado
+    if (readingInicio != lastButtonStateInicio) {
+      // Reinicia el contador de tiempo
+      lastDebounceTimeInicio = millis();
+    }
+
+    // Si han pasado más de 50 ms desde el último cambio detectado
+    if ((millis() - lastDebounceTimeInicio) > debounceDelay) {
+      // Si el estado ha cambiado después del retardo, actualiza el estado del botón
+      if (readingInicio != buttonStateInicio) {
+        buttonStateInicio = readingInicio;
+
+        /////
+
+        if ((buttonStateInicio == HIGH) && tiempoSegundos > 0) {
+
+          if (confirmacion == 0) {
+            confirmacion++;
+            Serial.print("confirmación");
+            Serial.println(confirmacion);
+            for (int i = 0; i < 3; i++) {
+              lcd.clear();
+              delay(300);
+              lcd.setCursor(0, 1);
+              lcd.print("Tiempo:" + cuenta + "Seg      ");
+              lcd.setCursor(0, 0);
+              lcd.print("confirmar-->");
+              delay(700);
+            }
+          }
+          else {
+            lcd.clear();
+            lcd.setCursor(0, 0);
+            lcd.print("inicio-->");
+            delay(700);
+            lcd.clear();
+            digitalWrite(cilindroEstira, LOW);
+            digitalWrite(cilindroRecoge, HIGH);
+            for (int i = tiempoSegundos; i >= 0; i--) {
+              cuenta = String(i);
+              lcd.setCursor(0, 1);
+              lcd.print("Tiempo:" + cuenta + "Seg      ");
+              Serial.print("tiempo: ");
+              Serial.println(cuenta);
+              delay(1000);
+              verSiPresionaReset();
+            }
+
+            rutinaDeExpulsion();
+
+            lcd.clear();
+            lcd.setCursor(0, 1);
+            lcd.print("Tiempo:" + cuenta + "Seg      ");
+
+          }
+        }
+      }
+    }
+    // Guarda el estado actual para comparar en el próximo ciclo
+  lastButtonStateInicio= readingInicio;
   }
 
   if (modoManual == true) {
@@ -172,39 +222,80 @@ void loop() {
 
 
 
-    if (digitalRead(inicio) == HIGH) {
-      while (digitalRead(inicio) == HIGH) {
-        delay(500);
-      }
-      if (cuentaStart == 0) {
-        lcd.clear();
-        lcd.setCursor(0, 0);
-        lcd.print("Extiende");
-        digitalWrite(cilindroEstira, LOW);
-        digitalWrite(cilindroRecoge, HIGH);
-      }
-      else {
-        lcd.clear();
-        lcd.setCursor(0, 0);
-        lcd.print("Contrae");
+    /////
+    int readingInicio = digitalRead(inicio);
 
-        digitalWrite(cilindroEstira, HIGH);
-        digitalWrite(cilindroRecoge, LOW);
+    // Si el estado ha cambiado
+    if (readingInicio != lastButtonStateInicio) {
+      // Reinicia el contador de tiempo
+      lastDebounceTimeInicio = millis();
+    }
+
+    // Si han pasado más de 50 ms desde el último cambio detectado
+    if ((millis() - lastDebounceTimeInicio) > debounceDelay) {
+      // Si el estado ha cambiado después del retardo, actualiza el estado del botón
+      if (readingInicio != buttonStateInicio) {
+        buttonStateInicio = readingInicio;
+
+        /////
+
+        if (buttonStateInicio == HIGH) {
+
+          if (cuentaStart == 0) {
+            lcd.clear();
+            lcd.setCursor(0, 0);
+            lcd.print("Extiende");
+            digitalWrite(cilindroEstira, LOW);
+            digitalWrite(cilindroRecoge, HIGH);
+          }
+          else {
+            lcd.clear();
+            lcd.setCursor(0, 0);
+            lcd.print("Contrae");
+
+            digitalWrite(cilindroEstira, HIGH);
+            digitalWrite(cilindroRecoge, LOW);
+          }
+          cuentaStart++;
+          if (cuentaStart == 2) { //reinicio la cuenta para que se mantenga entre 0 y 1.
+            cuentaStart = 0;
+          }
+        }
       }
-      cuentaStart++;
-      if(cuentaStart==2){//reinicio la cuenta para que se mantenga entre 0 y 1.
-        cuentaStart=0;
+    }
+    // Guarda el estado actual para comparar en el próximo ciclo
+  lastButtonStateInicio= readingInicio;
+    
+
+    /////
+    int readingProgrammer = digitalRead(programmer);
+
+    // Si el estado ha cambiado
+    if (readingProgrammer != lastButtonStateProgrammer) {
+      // Reinicia el contador de tiempo
+      lastDebounceTimeProgrammer = millis();
+    }
+
+    // Si han pasado más de 50 ms desde el último cambio detectado
+    if ((millis() - lastDebounceTimeProgrammer) > debounceDelay) {
+      // Si el estado ha cambiado después del retardo, actualiza el estado del botón
+      if (readingProgrammer != buttonStateProgrammer) {
+        buttonStateProgrammer = readingProgrammer;
+
+
+        //////
+
+        if (buttonStateProgrammer == HIGH) {
+
+          cuentaStart = 0;
+          rutinaDeExpulsion();
+
+        }
       }
     }
 
-    if (digitalRead(programmer) == HIGH) {
-      while (digitalRead(programmer) == HIGH) {
-        delay(500);
-      }
-      cuentaStart=0;
-      rutinaDeExpulsion();
-
-    }
+    // Guarda el estado actual para comparar en el próximo ciclo
+  lastButtonStateProgrammer = readingProgrammer;
 
     verSiPresionaReset();
 
@@ -212,63 +303,83 @@ void loop() {
 }
 
 void verSiPresionaReset() {
-  if (digitalRead(reset) == HIGH) {
-    unsigned long resetTime = millis();
-    while (digitalRead(reset) == HIGH) {
-      if (millis() - resetTime > 2000) {
-        modoManual = !modoManual;
+  int readingReset = digitalRead(reset);
+
+  // Si el estado ha cambiado
+  if (readingReset != lastButtonStateReset) {
+    // Reinicia el contador de tiempo
+    lastDebounceTimeReset = millis();
+  }
+
+  // Si han pasado más de 50 ms desde el último cambio detectado
+  if ((millis() - lastDebounceTimeReset) > debounceDelay) {
+    // Si el estado ha cambiado después del retardo, actualiza el estado del botón
+    if (readingReset != buttonStateReset) {
+      buttonStateReset = readingReset;
+
+      // Si el botón está presionado (estado HIGH), realiza la acción
+      if (buttonStateReset == HIGH) {
+        unsigned long resetTime = millis();
+        while (digitalRead(reset) == HIGH) {
+          if (millis() - resetTime > 2000) {
+            modoManual = !modoManual;
+            lcd.clear();
+            lcd.setCursor(0, 0);
+            lcd.print("CAMBIO DE MODO");
+            delay(1000);
+            lcd.clear();
+            return;
+
+          }
+
+
+        }
+
+        Serial.println("presionó Stop");
         lcd.clear();
         lcd.setCursor(0, 0);
-        lcd.print("CAMBIO DE MODO");
-        delay(1000);
-        lcd.clear();
-        return;
+        lcd.print("RESET");
+        estadoInicial();
+        ESP.restart();
 
       }
-      delay(500);
+      else {
 
+      }
     }
-
-    Serial.println("presionó Stop");
-    lcd.clear();
-    lcd.setCursor(0, 0);
-    lcd.print("RESET");
-    estadoInicial();
-   ESP.restart();
-
   }
-  else {
-
-  }
+  // Guarda el estado actual para comparar en el próximo ciclo
+  lastButtonStateReset= readingReset;
 }
+
 void estadoInicial() {
   digitalWrite(cilindroEstira, HIGH);
   digitalWrite(cilindroRecoge, LOW);
   digitalWrite(expulsa, HIGH);
 }
 
-void rutinaDeExpulsion(){
+void rutinaDeExpulsion() {
   digitalWrite(cilindroEstira, HIGH);
-        digitalWrite(cilindroRecoge, LOW);
+  digitalWrite(cilindroRecoge, LOW);
 
-        for (int i = 5; i > 0; i--) {
-          cuenta = String(i);
-          lcd.setCursor(0, 0);
-          lcd.print("Expulsando en: ");
-          lcd.setCursor(4, 1);
-          lcd.print(cuenta + "Seg          ");
-          Serial.print("expulsando en: ");
-          Serial.println(cuenta);
-          delay(1000);
-          verSiPresionaReset();
-        }
-        lcd.clear();
-        lcd.setCursor(0, 0);
-        lcd.print("Expulsar");
+  for (int i = 5; i > 0; i--) {
+    cuenta = String(i);
+    lcd.setCursor(0, 0);
+    lcd.print("Expulsando en: ");
+    lcd.setCursor(4, 1);
+    lcd.print(cuenta + "Seg          ");
+    Serial.print("expulsando en: ");
+    Serial.println(cuenta);
+    delay(1000);
+    verSiPresionaReset();
+  }
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print("Expulsar");
 
-        digitalWrite(expulsa, LOW);
-        delay(1500);
-        digitalWrite(expulsa, HIGH);
+  digitalWrite(expulsa, LOW);
+  delay(1500);
+  digitalWrite(expulsa, HIGH);
 
-        cuenta = String(tiempoSegundos);
+  cuenta = String(tiempoSegundos);
 }
