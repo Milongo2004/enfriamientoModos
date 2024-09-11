@@ -150,29 +150,8 @@ void loop() {
           delay(1000);
           verSiPresionaReset();
         }
-        digitalWrite(cilindroEstira, HIGH);
-        digitalWrite(cilindroRecoge, LOW);
 
-        for (int i = 5; i > 0; i--) {
-          cuenta = String(i);
-          lcd.setCursor(0, 0);
-          lcd.print("Expulsando en: ");
-          lcd.setCursor(4, 1);
-          lcd.print(cuenta + "Seg          ");
-          Serial.print("expulsando en: ");
-          Serial.println(cuenta);
-          delay(1000);
-          verSiPresionaReset();
-        }
-        lcd.clear();
-        lcd.setCursor(0, 0);
-        lcd.print("Expulsar");
-
-        digitalWrite(expulsa, LOW);
-        delay(1500);
-        digitalWrite(expulsa, HIGH);
-
-        cuenta = String(tiempoSegundos);
+        rutinaDeExpulsion();
 
         lcd.clear();
         lcd.setCursor(0, 1);
@@ -213,20 +192,17 @@ void loop() {
         digitalWrite(cilindroRecoge, LOW);
       }
       cuentaStart++;
+      if(cuentaStart==2){//reinicio la cuenta para que se mantenga entre 0 y 1.
+        cuentaStart=0;
+      }
     }
 
     if (digitalRead(programmer) == HIGH) {
       while (digitalRead(programmer) == HIGH) {
         delay(500);
       }
-      lcd.clear();
-      lcd.setCursor(0, 0);
-      lcd.print("Expulsar");
-
-      digitalWrite(expulsa, LOW);
-      delay(1500);
-      digitalWrite(expulsa, HIGH);
-
+      cuentaStart=0;
+      rutinaDeExpulsion();
 
     }
 
@@ -258,7 +234,7 @@ void verSiPresionaReset() {
     lcd.setCursor(0, 0);
     lcd.print("RESET");
     estadoInicial();
-
+   ESP.restart();
 
   }
   else {
@@ -269,4 +245,30 @@ void estadoInicial() {
   digitalWrite(cilindroEstira, HIGH);
   digitalWrite(cilindroRecoge, LOW);
   digitalWrite(expulsa, HIGH);
+}
+
+void rutinaDeExpulsion(){
+  digitalWrite(cilindroEstira, HIGH);
+        digitalWrite(cilindroRecoge, LOW);
+
+        for (int i = 5; i > 0; i--) {
+          cuenta = String(i);
+          lcd.setCursor(0, 0);
+          lcd.print("Expulsando en: ");
+          lcd.setCursor(4, 1);
+          lcd.print(cuenta + "Seg          ");
+          Serial.print("expulsando en: ");
+          Serial.println(cuenta);
+          delay(1000);
+          verSiPresionaReset();
+        }
+        lcd.clear();
+        lcd.setCursor(0, 0);
+        lcd.print("Expulsar");
+
+        digitalWrite(expulsa, LOW);
+        delay(1500);
+        digitalWrite(expulsa, HIGH);
+
+        cuenta = String(tiempoSegundos);
 }
