@@ -356,6 +356,8 @@ void estadoInicial() {
   digitalWrite(cilindroEstira, HIGH);
   digitalWrite(cilindroRecoge, LOW);
   digitalWrite(expulsa, HIGH);
+  delay(2000);
+  digitalWrite(cilindroRecoge, HIGH);
 }
 
 void rutinaDeExpulsion() {
