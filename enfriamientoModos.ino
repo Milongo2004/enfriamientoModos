@@ -10,7 +10,7 @@
 
 
 */
-
+//línea de prueba
 //defino las entradas,
 
 #define reset 39
@@ -46,6 +46,7 @@ int confirmacion; //se debe llevar nuevamente a 0 cuando se presione Reset.
 int esperaConfirmacion;
 int tiempoDeAccion; // lo que se puede tolerar funcionando un cilindro después de realizada la labor.
 String cuenta;
+byte cuentaStart = 0; //cuento las veces que presiono start para realizar las dos funciones de extender y contraer cilindro con el botón de start
 
 
 
@@ -65,11 +66,7 @@ void setup() {
 
   //estado inicial de los relevos
 
-  digitalWrite(cilindroEstira, HIGH);
-  digitalWrite(cilindroRecoge, LOW);
-  delay(1500);
-  digitalWrite(cilindroRecoge, HIGH);
-  digitalWrite(expulsa, HIGH);
+  estadoInicial();
 
   int tiempoSegundos = 0;
   int confirmacion = 0; //se debe llevar nuevamente a 0 cuando se presione Reset.
@@ -77,34 +74,30 @@ void setup() {
   int tiempoDeAccion = 2; // lo que se puede tolerar funcionando un cilindro después de realizada la labor.
   String cuenta = "0";
   Serial.begin (115200);
-  Wire.begin(I2C_SDA, I2C_SCL);
 
+  Wire.begin(I2C_SDA, I2C_SCL);
 
   lcd.init();
   lcd.backlight();
 
   lcd.setCursor(0, 0);
-  lcd.print("Bienvenid@!");
+  lcd.print("Inicio");
   delay(1000);
-
-  
-
-
 
 }
 
 void loop() {
-  if(modoManual == false){
-      lcd.clear();
-  lcd.setCursor(0, 0);
-  lcd.print("Modo Automatico");
+  if (modoManual == false) {
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print("Modo Automatico");
 
-  delay(1000);
+    delay(1000);
 
-  lcd.clear();
+    lcd.clear();
 
-  lcd.setCursor(0, 0);
-  lcd.print("Tiempo:" + cuenta + "Seg      ");
+    lcd.setCursor(0, 1);
+    lcd.print("Tiempo:" + cuenta + "Seg      ");
   }
   while (modoManual == false) {
     verSiPresionaReset();
@@ -116,7 +109,7 @@ void loop() {
       confirmacion = 0;
       tiempoSegundos += 30;
       cuenta = String(tiempoSegundos);
-      lcd.setCursor(0, 0);
+      lcd.setCursor(0, 1);
       lcd.print("Tiempo:" + cuenta + "Seg      ");
       Serial.print("tiempo programado: ");
       Serial.println(tiempoSegundos);
@@ -133,9 +126,9 @@ void loop() {
         for (int i = 0; i < 3; i++) {
           lcd.clear();
           delay(300);
-          lcd.setCursor(0, 0);
-          lcd.print("Tiempo:" + cuenta + "Seg      ");
           lcd.setCursor(0, 1);
+          lcd.print("Tiempo:" + cuenta + "Seg      ");
+          lcd.setCursor(0, 0);
           lcd.print("confirmar-->");
           delay(700);
         }
@@ -150,7 +143,7 @@ void loop() {
         digitalWrite(cilindroRecoge, HIGH);
         for (int i = tiempoSegundos; i >= 0; i--) {
           cuenta = String(i);
-          lcd.setCursor(0, 0);
+          lcd.setCursor(0, 1);
           lcd.print("Tiempo:" + cuenta + "Seg      ");
           Serial.print("tiempo: ");
           Serial.println(cuenta);
@@ -158,10 +151,8 @@ void loop() {
           verSiPresionaReset();
         }
         digitalWrite(cilindroEstira, HIGH);
-        delay(1000);
         digitalWrite(cilindroRecoge, LOW);
-        delay(1000);
-        digitalWrite(cilindroRecoge, HIGH);
+
         for (int i = 5; i > 0; i--) {
           cuenta = String(i);
           lcd.setCursor(0, 0);
@@ -184,42 +175,44 @@ void loop() {
         cuenta = String(tiempoSegundos);
 
         lcd.clear();
-        lcd.setCursor(0, 0);
+        lcd.setCursor(0, 1);
         lcd.print("Tiempo:" + cuenta + "Seg      ");
 
       }
     }
   }
 
-  if(modoManual == true){
+  if (modoManual == true) {
     lcd.clear();
-     lcd.setCursor(0, 0);
+    lcd.setCursor(0, 0);
     lcd.print("Modo Manual");
 
-  digitalWrite(cilindroEstira, HIGH);
-  digitalWrite(cilindroRecoge, LOW);
-  delay(1500);
-  digitalWrite(cilindroRecoge, HIGH);
-  digitalWrite(expulsa, HIGH);
+    estadoInicial();
   }
   while (modoManual == true) { //cuando se activa modo manual.
-    
-  
+
+
 
     if (digitalRead(inicio) == HIGH) {
       while (digitalRead(inicio) == HIGH) {
         delay(500);
       }
+      if (cuentaStart == 0) {
+        lcd.clear();
+        lcd.setCursor(0, 0);
+        lcd.print("Extiende");
+        digitalWrite(cilindroEstira, LOW);
+        digitalWrite(cilindroRecoge, HIGH);
+      }
+      else {
+        lcd.clear();
+        lcd.setCursor(0, 0);
+        lcd.print("Contrae");
 
-      lcd.clear();
-      lcd.setCursor(0, 0);
-      lcd.print("Extiende");
-      delay(1000);
-
-      digitalWrite(cilindroEstira, LOW);
-      digitalWrite(cilindroRecoge, HIGH);
-
-
+        digitalWrite(cilindroEstira, HIGH);
+        digitalWrite(cilindroRecoge, LOW);
+      }
+      cuentaStart++;
     }
 
     if (digitalRead(programmer) == HIGH) {
@@ -228,10 +221,11 @@ void loop() {
       }
       lcd.clear();
       lcd.setCursor(0, 0);
-      lcd.print("Contrae");
-      delay(1000);
-      digitalWrite(cilindroEstira, HIGH);
-      digitalWrite(cilindroRecoge, LOW);
+      lcd.print("Expulsar");
+
+      digitalWrite(expulsa, LOW);
+      delay(1500);
+      digitalWrite(expulsa, HIGH);
 
 
     }
@@ -249,33 +243,30 @@ void verSiPresionaReset() {
         modoManual = !modoManual;
         lcd.clear();
         lcd.setCursor(0, 0);
-      lcd.print("CAMBIO DE MODO");
-      delay(1000);
-      lcd.clear();
-      return;
-        
+        lcd.print("CAMBIO DE MODO");
+        delay(1000);
+        lcd.clear();
+        return;
+
       }
-      delay(200);
-      
+      delay(500);
+
     }
-    if ( modoManual == false) {
-      Serial.println("presionó Stop");
-      lcd.clear();
-      lcd.setCursor(0, 0);
-      lcd.print("RESET");
-      ESP.restart();
-    }
-    else {
-      lcd.clear();
-      lcd.setCursor(0, 0);
-      lcd.print("Expulsar");
-      digitalWrite(expulsa, LOW);
-      delay(2000);
-      digitalWrite(expulsa, HIGH);
-    }
+
+    Serial.println("presionó Stop");
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print("RESET");
+    estadoInicial();
+
 
   }
   else {
 
   }
+}
+void estadoInicial() {
+  digitalWrite(cilindroEstira, HIGH);
+  digitalWrite(cilindroRecoge, LOW);
+  digitalWrite(expulsa, HIGH);
 }
